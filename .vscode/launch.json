@@ -1,0 +1,30 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Debug Rust",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/wormhole-rs.exe",
+            "args": ["send", "./README.md"],
+            "stopAtEntry": false,
+            "environment": [],
+            "externalConsole": true,
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "name": "Run Release Rust",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/release/wormhole-rs.exe",
+            "args": ["send", "./README.md"],
+            "stopAtEntry": false,
+            "environment": [],
+            "externalConsole": true,
+            "preLaunchTask": "rust: cargo build --release"
+        }
+    ]
+}

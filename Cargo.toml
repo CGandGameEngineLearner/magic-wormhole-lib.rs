@@ -109,5 +109,5 @@ strip = "debuginfo"
 lto = "thin"
 
 [workspace]
-members = [".", "cli"]
-default-members = ["cli"]
+members = [".", "cli","lib"]
+default-members = ["cli","lib"]

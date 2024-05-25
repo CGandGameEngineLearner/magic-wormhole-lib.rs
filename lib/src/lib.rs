@@ -1,19 +1,36 @@
 
 mod mediator;
 mod util;
+use async_std::task;
+use std::ffi::CStr;
+use std::os::raw::c_char;
+use std::path::PathBuf;
+use encoding_rs::GBK;
 
 #[no_mangle]
-pub extern "C" fn send_file(c_file_path: *const c_char) -> *const c_char {
-    let file_path = unsafe {
-        if c_file_path.is_null() {
-            return std::ptr::null();
-        }
-        let cstr_file_path = CStr::from_ptr(c_file_path);
-        util::cstr_to_option_string(cstr_file_path)
-    };
-    
-    //let offer = mediator::make_send_offer(, file_path).await?;
+pub extern "C" fn send_file(file_paths: *const *const c_char,length:usize,file_name:*const c_char) -> *const c_char {
+    let paths_slice = unsafe { std::slice::from_raw_parts(file_paths, length) };
+    let mut paths_vec = Vec::new();
 
+    for &path in paths_slice {
+        let c_str = unsafe { CStr::from_ptr(path) };
+        let bytes = c_str.to_bytes();
+        let (decoded, _, _) = GBK.decode(bytes);
+        let path_buf = PathBuf::from(decoded.to_string());
+        paths_vec.push(path_buf);
+    }
+
+    // 转换文件名
+    let file_name_str = if !file_name.is_null() {
+        let c_str = unsafe { CStr::from_ptr(file_name) };
+        let bytes = c_str.to_bytes();
+        let (decoded, _, _) = GBK.decode(bytes);
+        Some(decoded.to_string())
+    } else {
+        None
+    };
+
+    let offer = task::block_on(mediator::make_send_offer(paths_vec, file_name_str));
     return std::ptr::null();
 }
 
@@ -30,35 +47,6 @@ pub extern "C" fn add(a: i32, b: i32) -> i32 {
 pub extern "C" fn hello() {
     println!("Hello from Rust!");
 }
-
-
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
-
-#[no_mangle]
-pub extern "C" fn process_gb18030_string(input: *const c_char) -> *const c_char {
-    // Cpp的字符串传过来时 不可避免的unsafe
-    let c_str = unsafe {
-        if input.is_null() {
-            return std::ptr::null();
-        }
-        CStr::from_ptr(input)
-    };
-
-    // 将 C 字符串转换为 Rust 字符串
-    let r_str = match c_str.to_str() {
-        Ok(s) => s,
-        Err(_) => return CString::new("Invalid UTF-8").unwrap().into_raw(),
-    };
-
-    // 对字符串进行处理（示例：转换为大写）
-    let result_str = r_str.to_uppercase();
-
-    // 将 Rust 字符串转换回 C 字符串
-    let c_result_str = CString::new(result_str).unwrap();
-    c_result_str.into_raw()
-}
-
 
 
 // ***********************************************

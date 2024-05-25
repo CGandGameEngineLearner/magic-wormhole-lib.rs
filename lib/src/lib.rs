@@ -1,14 +1,15 @@
 
 mod mediator;
+
 mod util;
-use async_std::task;
+
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::path::PathBuf;
 use encoding_rs::GBK;
 
 #[no_mangle]
-pub extern "C" fn send_file(file_paths: *const *const c_char,length:usize,file_name:*const c_char) -> *const c_char {
+pub extern "C" fn send_file(file_paths: *const *const c_char,length:usize,file_name:*const c_char,code_length:usize) -> *const c_char {
     let paths_slice = unsafe { std::slice::from_raw_parts(file_paths, length) };
     let mut paths_vec = Vec::new();
 
@@ -30,7 +31,8 @@ pub extern "C" fn send_file(file_paths: *const *const c_char,length:usize,file_n
         None
     };
 
-    let offer = task::block_on(mediator::make_send_offer(paths_vec, file_name_str));
+    
+
     return std::ptr::null();
 }
 

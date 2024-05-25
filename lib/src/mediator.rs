@@ -1,10 +1,11 @@
 
 
-use color_eyre::eyre;
+use color_eyre::eyre::{self, Ok};
+
 use std::path::PathBuf;
-
-use magic_wormhole::transfer;
-
+use magic_wormhole::{transfer::{self, Offer}, transit::Abilities};
+use eyre::ErrReport;
+use magic_wormhole::{forwarding, transit, MailboxConnection, Wormhole};
 
 pub async fn make_send_offer(
     mut files: Vec<PathBuf>,
@@ -54,3 +55,20 @@ pub async fn make_send_offer(
         },
     }
 }
+
+pub async fn try_send(paths_vec: Vec<PathBuf>, file_name_str: Option<String>, code_length: usize) -> eyre::Result<magic_wormhole::Code, ErrReport> {
+    let offer= make_send_offer(paths_vec, file_name_str).await?;
+    
+    let transit_abilities: Abilities = transit::Abilities::ALL_ABILITIES;
+
+    let mailbox_connection: MailboxConnection<transfer::AppVersion> = MailboxConnection::create(transfer::APP_CONFIG, code_length).await?;
+    let wormhole_code: magic_wormhole::Code = mailbox_connection.code.clone();
+    let wormhole = Wormhole::connect(mailbox_connection).await?;
+    
+    
+
+   
+    Ok(wormhole_code)
+}
+
+

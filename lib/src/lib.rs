@@ -3,7 +3,7 @@ mod mediator;
 mod util;
 
 #[no_mangle]
-pub extern "C" fn send(c_file_path: *const c_char) -> *const c_char {
+pub extern "C" fn send_file(c_file_path: *const c_char) -> *const c_char {
     let file_path = unsafe {
         if c_file_path.is_null() {
             return std::ptr::null();

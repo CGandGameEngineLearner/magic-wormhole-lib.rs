@@ -108,6 +108,10 @@ overflow-checks = true
 strip = "debuginfo"
 lto = "thin"
 
+[profile.dev]
+debug = true
+
+
 [workspace]
 members = [".", "cli","lib"]
 default-members = ["cli","lib"]

@@ -1,4 +1,4 @@
-# Rusty Wormhole
+# Rusty Wormhole Library
 
 Get things from one computer to another, safely.
 

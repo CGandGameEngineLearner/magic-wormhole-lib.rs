@@ -1,15 +1,29 @@
-
 mod mediator;
 
-mod util;
-
 use std::ffi::CStr;
+use std::ffi::CString;
 use std::os::raw::c_char;
 use std::path::PathBuf;
+use std::ptr;
+
+use async_std::task;
 use encoding_rs::GBK;
 
+// ***********************************************
+// lib:
+// C/C++ can call them
+// ***********************************************
+
+/// # 发送文件
+/// file_paths
 #[no_mangle]
-pub extern "C" fn send_file(file_paths: *const *const c_char,length:usize,file_name:*const c_char,code_length:usize) -> *const c_char {
+pub extern "C" fn send_file(
+    file_paths: *const *const c_char,
+    length: usize,
+    file_name: *const c_char,
+    code_length: usize,
+) -> *const c_char {
+    // # 发送文件
     let paths_slice = unsafe { std::slice::from_raw_parts(file_paths, length) };
     let mut paths_vec = Vec::new();
 
@@ -31,14 +45,26 @@ pub extern "C" fn send_file(file_paths: *const *const c_char,length:usize,file_n
         None
     };
 
-    
-
-    return std::ptr::null();
+    let wormhole_code = task::block_on(mediator::try_send(paths_vec, file_name_str, code_length));
+    match wormhole_code {
+        Ok(code) => {
+            let c_code = CString::new(code.clone()).unwrap();
+            return c_code.into_raw();
+        },
+        Err(error_report) => {
+            println!("{:?}", error_report);
+            return ptr::null();
+        },
+    }
 }
-
+// ***********************************************
+// lib:
+// C/C++ can call them
+// ***********************************************
 
 // ***********************************************
-// cpp call rust test begin
+// Cpp call rust test
+// Begin
 // ***********************************************
 #[no_mangle]
 pub extern "C" fn add(a: i32, b: i32) -> i32 {
@@ -50,7 +76,7 @@ pub extern "C" fn hello() {
     println!("Hello from Rust!");
 }
 
-
 // ***********************************************
-// cpp call rust test end
+// Cpp call rust test
+// End
 // ***********************************************

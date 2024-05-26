@@ -1,13 +1,55 @@
 
 
-use color_eyre::eyre::{self, Ok};
-
+use color_eyre::eyre::{self, Ok, Context};
+use futures::future::BoxFuture;
 use std::path::PathBuf;
-use magic_wormhole::{transfer::{self, Offer}, transit::Abilities};
+use magic_wormhole::{transfer::{self}, transit::Abilities};
 use eyre::ErrReport;
-use magic_wormhole::{forwarding, transit, MailboxConnection, Wormhole};
+use std::sync::Arc;
+use indicatif::{ProgressBar};
+use magic_wormhole::{ transit, MailboxConnection, Wormhole};
 
-pub async fn make_send_offer(
+pub async fn try_send(paths_vec: Vec<PathBuf>, file_name_str: Option<String>, code_length: usize) 
+-> eyre::Result<String, ErrReport> 
+{
+    let offer = make_send_offer(paths_vec, file_name_str).await?;
+    
+    let transit_abilities: Abilities = transit::Abilities::ALL_ABILITIES;
+
+    let mailbox_connection: MailboxConnection<transfer::AppVersion> 
+    = MailboxConnection::create(transfer::APP_CONFIG, code_length).await?;
+
+    let wormhole_code: magic_wormhole::Code = mailbox_connection.code.clone();
+    let wormhole: Wormhole = Wormhole::connect(mailbox_connection).await?;
+    let mut relay_hints: Vec<transit::RelayHint> = Vec::new();
+    relay_hints.push(transit::RelayHint::from_urls(
+        None,
+        [magic_wormhole::transit::DEFAULT_RELAY_SERVER
+            .parse()
+            .unwrap()],
+    )?);
+    
+    let fn_cancel = cancel();
+
+    let pb = create_progress_bar(0);
+    let pb2 = pb.clone();
+    transfer::send(
+        wormhole,
+        relay_hints,
+        transit_abilities,
+        offer,
+        &transit::log_transit_connection,
+        create_progress_handler(pb),
+        fn_cancel(),
+    )
+    .await
+    .context("Send process failed")?;
+    pb2.finish();
+   
+    Ok(wormhole_code.0)
+}
+
+async fn make_send_offer(
     mut files: Vec<PathBuf>,
     file_name: Option<String>,
 ) -> eyre::Result<transfer::OfferSend> {
@@ -56,19 +98,40 @@ pub async fn make_send_offer(
     }
 }
 
-pub async fn try_send(paths_vec: Vec<PathBuf>, file_name_str: Option<String>, code_length: usize) -> eyre::Result<magic_wormhole::Code, ErrReport> {
-    let offer= make_send_offer(paths_vec, file_name_str).await?;
-    
-    let transit_abilities: Abilities = transit::Abilities::ALL_ABILITIES;
+fn cancel() -> impl Fn() -> BoxFuture<'static, ()> + Clone {
+    let func = Arc::new(|| {
+        Box::pin(async {
+            // 什么都不做
+        }) as BoxFuture<'static, ()>
+    });
 
-    let mailbox_connection: MailboxConnection<transfer::AppVersion> = MailboxConnection::create(transfer::APP_CONFIG, code_length).await?;
-    let wormhole_code: magic_wormhole::Code = mailbox_connection.code.clone();
-    let wormhole = Wormhole::connect(mailbox_connection).await?;
-    
-    
-
-   
-    Ok(wormhole_code)
+    move || {
+        let func = func.clone();
+        (func)()
+    }
 }
 
+fn create_progress_bar(file_size: u64) -> ProgressBar {
+    use indicatif::ProgressStyle;
 
+    let pb = ProgressBar::new(file_size);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            // .template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .template("[{elapsed_precise}] [{wide_bar}] {bytes}/{total_bytes} ({eta})")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+    pb
+}
+
+fn create_progress_handler(pb: ProgressBar) -> impl FnMut(u64, u64) {
+    move |sent, total| {
+        if sent == 0 {
+            pb.reset_elapsed();
+            pb.set_length(total);
+            pb.enable_steady_tick(std::time::Duration::from_millis(250));
+        }
+        pb.set_position(sent);
+    }
+}

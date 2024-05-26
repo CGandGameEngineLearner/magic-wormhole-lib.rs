@@ -9,22 +9,24 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/wormhole-rs.exe",
-            "args": [],
+            "args": ["send","./","--rename","test"],
             "stopAtEntry": false,
             "environment": [],
             "externalConsole": true,
-            "preLaunchTask": "rust: cargo build"
+            "preLaunchTask": "rust: cargo build",
+            "cwd": "${workspaceRoot}"
         },
         {
             "name": "Run Release Rust",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/release/wormhole-rs.exe",
-            "args": [],
+            "args": ["send","./","--rename","test"],
             "stopAtEntry": false,
             "environment": [],
             "externalConsole": true,
-            "preLaunchTask": "rust: cargo build --release"
+            "preLaunchTask": "rust: cargo build --release",
+            "cwd": "${workspaceRoot}"
         }
     ]
 }

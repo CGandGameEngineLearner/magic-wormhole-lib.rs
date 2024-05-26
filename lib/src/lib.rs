@@ -1,10 +1,10 @@
 mod mediator;
 
+use std::ptr;
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::os::raw::c_char;
 use std::path::PathBuf;
-use std::ptr;
+use std::os::raw::c_char;
 
 use async_std::task;
 use encoding_rs::UTF_8;
@@ -59,7 +59,7 @@ pub extern "C" fn send_files(
 
 /// # 接受文件
 #[no_mangle]
-pub extern "C" fn receive_files(wormhole_code:*const c_char,save_path: *const c_char){
+pub extern "C" fn receive_files(wormhole_code:*const c_char,save_path: *const c_char)->bool{
     let c_wormhole_code = unsafe { CStr::from_ptr(wormhole_code) };
     let c_wormhole_code_bytes = c_wormhole_code.to_bytes();
     let (decoded_wormhole_code, _, _) = UTF_8.decode(c_wormhole_code_bytes);
@@ -72,7 +72,16 @@ pub extern "C" fn receive_files(wormhole_code:*const c_char,save_path: *const c_
 
     let buf_save_path = PathBuf::from(save_path_decoded.to_string());
 
-    mediator::try_recieve(s_wormhole_code,buf_save_path);
+    let res =  task::block_on(mediator::try_recieve(s_wormhole_code,buf_save_path));
+    match res{
+        Ok(res) => {
+            return res;
+        },
+        Err(error_report) => {
+            println!("{:?}", error_report);
+            return false;
+        },
+    }
 
 }
 

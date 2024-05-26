@@ -1,14 +1,9 @@
-
-
-use color_eyre::eyre::{self, Ok, Context};
-use std::path::PathBuf;
-use magic_wormhole::{transfer::{self}, transit::Abilities};
-use eyre::ErrReport;
 use std::sync::Arc;
-use futures::{future::Either, Future, FutureExt};
-
-use indicatif::{ProgressBar};
-use magic_wormhole::{ transit, MailboxConnection, Wormhole};
+use futures::FutureExt;
+use std::path::PathBuf;
+use indicatif::ProgressBar;
+use color_eyre::eyre::{self, Ok, Context,ErrReport};
+use magic_wormhole::{ transfer::{self}, transit::Abilities,transit, MailboxConnection, Wormhole};
 
 pub async fn try_send(paths_vec: Vec<PathBuf>, new_name_str: Option<String>, code_length: usize) 
 -> eyre::Result<String, ErrReport> 
@@ -67,7 +62,7 @@ pub async fn  try_recieve(wormhole_code:String, save_path: PathBuf)-> eyre::Resu
             = MailboxConnection::connect(transfer::APP_CONFIG, code, true).await?;
 
 
-            let wormhole_code: magic_wormhole::Code = mailbox_connection.code.clone();
+            
             let wormhole: Wormhole = Wormhole::connect(mailbox_connection).await?;
             let mut relay_hints: Vec<transit::RelayHint> = Vec::new();
             relay_hints.push(transit::RelayHint::from_urls(
@@ -85,7 +80,7 @@ pub async fn  try_recieve(wormhole_code:String, save_path: PathBuf)-> eyre::Resu
                     receive_inner_v1(req, &save_path, true, ctrl_c).await?
                 },
                 Some(transfer::ReceiveRequest::V2(req)) => {
-                    receive_inner_v2(req,&save_path, true,  ctrl_c).await?
+                    receive_inner_v2(req,&save_path,  ctrl_c).await?
                 },
                 None => {
                     return Ok(false);
@@ -200,26 +195,7 @@ async fn receive_inner_v1(
      * - Then, we check if the file already exists
      * - If it exists, ask whether to overwrite and act accordingly
      * - If it doesn't, directly accept, but DON'T overwrite any files
-     */
-
-    use number_prefix::NumberPrefix;
-    // if !(noconfirm
-    //     || util::ask_user(
-    //         format!(
-    //             "Receive file '{}' ({})?",
-    //             req.filename,
-    //             match NumberPrefix::binary(req.filesize as f64) {
-    //                 NumberPrefix::Standalone(bytes) => format!("{} bytes", bytes),
-    //                 NumberPrefix::Prefixed(prefix, n) =>
-    //                     format!("{:.1} {}B in size", n, prefix.symbol()),
-    //             },
-    //         ),
-    //         true,
-    //     )
-    //     .await)
-    // {
-    //     return req.reject().await.context("Could not reject offer");
-    // }
+     */ 
 
     // TODO validate untrusted input here
     let file_path = std::path::Path::new(target_dir).join(&req.filename);
@@ -274,31 +250,12 @@ async fn receive_inner_v1(
 async fn receive_inner_v2(
     req: transfer::ReceiveRequestV2,
     target_dir: &std::path::Path,
-    noconfirm: bool,
     ctrl_c: impl Fn() -> futures::future::BoxFuture<'static, ()>,
 ) -> eyre::Result<()> {
     let offer = req.offer();
     let file_size = offer.total_size();
-    let offer_name = offer.offer_name();
 
-    use number_prefix::NumberPrefix;
-    // if !(noconfirm
-    //     || util::ask_user(
-    //         format!(
-    //             "Receive {} ({})?",
-    //             offer_name,
-    //             match NumberPrefix::binary(file_size as f64) {
-    //                 NumberPrefix::Standalone(bytes) => format!("{} bytes", bytes),
-    //                 NumberPrefix::Prefixed(prefix, n) =>
-    //                     format!("{:.1} {}B in size", n, prefix.symbol()),
-    //             },
-    //         ),
-    //         true,
-    //     )
-    //     .await)
-    // {
-    //     return req.reject().await.context("Could not reject offer");
-    // }
+    
 
     let pb = create_progress_bar(file_size);
 

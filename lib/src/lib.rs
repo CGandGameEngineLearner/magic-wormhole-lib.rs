@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::ptr;
 
 use async_std::task;
-use encoding_rs::GBK;
+use encoding_rs::UTF_8;
 
 // ***********************************************
 // lib:
@@ -15,12 +15,11 @@ use encoding_rs::GBK;
 // ***********************************************
 
 /// # 发送文件
-/// file_paths
 #[no_mangle]
-pub extern "C" fn send_file(
+pub extern "C" fn send_files(
     file_paths: *const *const c_char,
     length: usize,
-    file_name: *const c_char,
+    new_name: *const c_char,
     code_length: usize,
 ) -> *const c_char {
     // # 发送文件
@@ -30,16 +29,16 @@ pub extern "C" fn send_file(
     for &path in paths_slice {
         let c_str = unsafe { CStr::from_ptr(path) };
         let bytes = c_str.to_bytes();
-        let (decoded, _, _) = GBK.decode(bytes);
+        let (decoded, _, _) = UTF_8.decode(bytes);
         let path_buf = PathBuf::from(decoded.to_string());
         paths_vec.push(path_buf);
     }
 
     // 转换文件名
-    let file_name_str = if !file_name.is_null() {
-        let c_str = unsafe { CStr::from_ptr(file_name) };
+    let file_name_str = if !new_name.is_null() {
+        let c_str = unsafe { CStr::from_ptr(new_name) };
         let bytes = c_str.to_bytes();
-        let (decoded, _, _) = GBK.decode(bytes);
+        let (decoded, _, _) = UTF_8.decode(bytes);
         Some(decoded.to_string())
     } else {
         None
@@ -57,10 +56,34 @@ pub extern "C" fn send_file(
         },
     }
 }
+
+/// # 接受文件
+#[no_mangle]
+pub extern "C" fn receive_files(wormhole_code:*const c_char,save_path: *const c_char){
+    let c_wormhole_code = unsafe { CStr::from_ptr(wormhole_code) };
+    let c_wormhole_code_bytes = c_wormhole_code.to_bytes();
+    let (decoded_wormhole_code, _, _) = UTF_8.decode(c_wormhole_code_bytes);
+
+    let s_wormhole_code = decoded_wormhole_code.to_string();
+
+    let c_save_path = unsafe { CStr::from_ptr(save_path) };
+    let c_save_path_bytes = c_save_path.to_bytes();
+    let (save_path_decoded, _, _) = UTF_8.decode(c_save_path_bytes);
+
+    let buf_save_path = PathBuf::from(save_path_decoded.to_string());
+
+    mediator::try_recieve(s_wormhole_code,buf_save_path);
+
+}
+
+
 // ***********************************************
 // lib:
 // C/C++ can call them
 // ***********************************************
+
+
+
 
 // ***********************************************
 // Cpp call rust test

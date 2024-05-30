@@ -548,7 +548,8 @@ async fn main() -> eyre::Result<()> {
             std::process::exit(2);
         },
     }
-
+    println!("Press Enter to exit...");
+    std::io::stdin().read_line(&mut String::new()).unwrap();
     Ok(())
 }
 
@@ -626,7 +627,7 @@ async fn parse_and_connect(
             if is_send {
                 if let Some(clipboard) = clipboard {
                     match clipboard.set_text(mailbox_connection.code.to_string()) {
-                        Ok(()) => log::info!("Code copied to clipboard"),
+                        Ok(()) => {},//log::info!("Code copied to clipboard"),
                         Err(err) => log::warn!("Failed to copy code to clipboard: {}", err),
                     }
                 }
@@ -731,7 +732,7 @@ fn enter_code() -> eyre::Result<String> {
 
 fn print_welcome(term: &mut Term, welcome: &Option<String>) -> eyre::Result<()> {
     if let Some(welcome) = &welcome {
-        writeln!(term, "Got welcome from server: {}", welcome)?;
+        //writeln!(term, "Got welcome from server: {}", welcome)?;
     }
     Ok(())
 }
@@ -750,24 +751,24 @@ fn sender_print_code(
     .to_string();
     writeln!(
         term,
-        "\nThis wormhole's code is: {} (it has been copied to your clipboard)",
+        "{}",
         style(&code).bold()
     )?;
-    writeln!(term, "This is equivalent to the following link: \u{001B}]8;;{}\u{001B}\\{}\u{001B}]8;;\u{001B}\\", &uri, &uri)?;
-    let qr =
-        qr2term::generate_qr_string(&uri).context("Failed to generate QR code for send link")?;
-    writeln!(term, "{}", qr)?;
+    // writeln!(term, "This is equivalent to the following link: \u{001B}]8;;{}\u{001B}\\{}\u{001B}]8;;\u{001B}\\", &uri, &uri)?;
+    // let qr =
+    //     qr2term::generate_qr_string(&uri).context("Failed to generate QR code for send link")?;
+    // writeln!(term, "{}", qr)?;
 
-    writeln!(
-        term,
-        "On the other side, open the link or enter that code into a Magic Wormhole client."
-    )?;
-    writeln!(
-        term,
-        "For example: {} {}\n",
-        style("wormhole-rs receive").bold(),
-        style(&code).bold()
-    )?;
+    // writeln!(
+    //     term,
+    //     "On the other side, open the link or enter that code into a Magic Wormhole client."
+    // )?;
+    // writeln!(
+    //     term,
+    //     "For example: {} {}\n",
+    //     style("wormhole-rs receive").bold(),
+    //     style(&code).bold()
+    // )?;
     Ok(())
 }
 

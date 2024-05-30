@@ -397,7 +397,7 @@ impl RendezvousServer {
             .send_message(&OutboundMessage::bind(appid.clone(), side.clone()), None)
             .await?;
 
-        log::info!("Connected to rendezvous server.");
+        //log::info!("Connected to rendezvous server.");
 
         Ok((
             Self {

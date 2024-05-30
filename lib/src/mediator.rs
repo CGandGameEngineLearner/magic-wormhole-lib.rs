@@ -9,7 +9,7 @@ pub async fn try_send(paths_vec: Vec<PathBuf>, new_name_str: Option<String>, cod
 -> eyre::Result<String, ErrReport> 
 {
     let offer = make_send_offer(paths_vec, new_name_str).await?;
-    
+    //rintln!("{:?}",  offer);
     let transit_abilities: Abilities = transit::Abilities::ALL_ABILITIES;
 
     let mailbox_connection: MailboxConnection<transfer::AppVersion> 
@@ -48,7 +48,6 @@ pub async fn try_send(paths_vec: Vec<PathBuf>, new_name_str: Option<String>, cod
 pub async fn  try_recieve(wormhole_code:String, save_path: PathBuf)-> eyre::Result<bool,ErrReport> 
 {
     let transit_abilities: Abilities = transit::Abilities::ALL_ABILITIES;
-    
     
     let code = Some(wormhole_code)
         .map(Result::Ok)

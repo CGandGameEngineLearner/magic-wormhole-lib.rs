@@ -11,7 +11,7 @@ use encoding_rs::UTF_8;
 
 // ***********************************************
 // lib:
-// C/C++ can call them
+// C/C++ Can Call Them
 // ***********************************************
 
 /// # 发送文件
@@ -88,14 +88,14 @@ pub extern "C" fn receive_files(wormhole_code:*const c_char,save_path: *const c_
 
 // ***********************************************
 // lib:
-// C/C++ can call them
+// C/C++ Can Call Them
 // ***********************************************
 
 
 
 
 // ***********************************************
-// Cpp call rust test
+// Cpp Call Rust Test
 // Begin
 // ***********************************************
 #[no_mangle]
@@ -109,6 +109,41 @@ pub extern "C" fn hello() {
 }
 
 // ***********************************************
-// Cpp call rust test
+// Cpp Call Rust Test
 // End
 // ***********************************************
+
+
+
+// ***********************************************
+// Test Case
+// ***********************************************
+
+#[test]
+fn test_send()
+{
+    // 创建一些 Rust 字符串
+    let file_paths = vec!["./README.md"];
+
+    // 将这些字符串转换为 CString
+    let c_strings: Vec<CString> = file_paths
+        .into_iter()
+        .map(|s| CString::new(s).expect("CString::new failed"))
+        .collect();
+
+    // 获取每个 CString 的指针
+    let c_ptrs: Vec<*const c_char> = c_strings.iter()
+        .map(|s| s.as_ptr())
+        .collect();
+
+    // 获取指向这些指针的指针
+    let c_ptrs_ptr: *const *const c_char = c_ptrs.as_ptr();
+
+    
+    let new_name: *const c_char = CString::new("new_name").expect("CString::new failed").as_ptr();
+
+
+    let c_wormhole_code: *const c_char = send_files(c_ptrs_ptr,1, new_name,2);
+
+    println!("Pointer to pointers: {:?}", c_wormhole_code);
+}
